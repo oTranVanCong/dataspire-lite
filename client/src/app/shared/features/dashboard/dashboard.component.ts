@@ -144,7 +144,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private filterMap: Map<string, number>;
 
   constructor(
-    private processApiService: ProcessApisService,    
+    private processApiService: ProcessApisService,
     private cookieService: CookieService,
     private tokenService: TokenService,
     private communicatorService: CommunicatorService,

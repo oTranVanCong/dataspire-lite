@@ -73,14 +73,14 @@ export class PieComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
 
   ngOnChanges({data}: SimpleChanges): void {
     this.browserOnly(() => {
-      if (this.chart && data.currentValue) {        
-        this.chart.data = data.currentValue;        
+      if (this.chart && data.currentValue) {
+        this.chart.data = data.currentValue;
       }
     });
   }
 
 
-  ngAfterViewInit(): void {    
+  ngAfterViewInit(): void {
     // Chart code goes in here
     this.browserOnly(() => {
       const ele = this.chartEle.nativeElement;
