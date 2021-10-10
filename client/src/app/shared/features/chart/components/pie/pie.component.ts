@@ -3,12 +3,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  EventEmitter,
   Inject,
   Input,
   NgZone,
   OnChanges,
   OnDestroy,
   OnInit,
+  Output,
   PLATFORM_ID,
   SimpleChanges,
   ViewChild
@@ -16,6 +18,9 @@ import {
 import * as am4charts from '@amcharts/amcharts4/charts';
 import {isPlatformBrowser} from '@angular/common';
 import * as am4core from '@amcharts/amcharts4/core';
+import { CommunicatorService } from 'src/app/services/communicator.service';
+import { filter, takeUntil } from 'rxjs/operators';
+import { Subject } from 'rxjs';
 
 @Component({
   selector: 'app-pie',
@@ -30,11 +35,14 @@ export class PieComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   @ViewChild('chartEle') chartEle: ElementRef<HTMLDivElement>;
   @Input() height = 350;
   @Input() data: Array<{ name: string, value: number }>;
+  @Output() onToggleLegend: EventEmitter<{ name: string, visible: boolean }> = new EventEmitter();
+
+  destroy$: Subject<void> = new Subject();
 
   private chart: am4charts.SlicedChart;
   iconPath = 'M53.5,476c0,14,6.833,21,20.5,21s20.5-7,20.5-21V287h21v189c0,14,6.834,21,20.5,21 c13.667,0,20.5-7,20.5-21V154h10v116c0,7.334,2.5,12.667,7.5,16s10.167,3.333,15.5,0s8-8.667,8-16V145c0-13.334-4.5-23.667-13.5-31 s-21.5-11-37.5-11h-82c-15.333,0-27.833,3.333-37.5,10s-14.5,17-14.5,31v133c0,6,2.667,10.333,8,13s10.5,2.667,15.5,0s7.5-7,7.5-13 V154h10V476 M61.5,42.5c0,11.667,4.167,21.667,12.5,30S92.333,85,104,85s21.667-4.167,30-12.5S146.5,54,146.5,42 c0-11.335-4.167-21.168-12.5-29.5C125.667,4.167,115.667,0,104,0S82.333,4.167,74,12.5S61.5,30.833,61.5,42.5z';
 
-  constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone) {
+  constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone, private communicatorService: CommunicatorService) {
   }
 
   // Run the function only in the browser
@@ -47,6 +55,20 @@ export class PieComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   }
 
   ngOnInit(): void {
+    this.browserOnly(() => {
+      this.communicatorService.toggleLegend$
+      .pipe(
+        takeUntil(this.destroy$),
+        filter(item => item !== null)
+      )
+      .subscribe((value) => {
+        if (this.chart) {
+          // TODO: At here, Implement reflect toggling legend from column chart to pie chart ASAP
+          // const mapFields: string[] = ['Returning Guest', '1st-Time Guest'];
+          
+        }
+      });  
+    });
   }
 
   ngOnChanges({data}: SimpleChanges): void {
@@ -82,6 +104,15 @@ export class PieComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       chart.legend.paddingTop = 20;
       chart.legend.labels.template.maxWidth = 95;
 
+      chart.legend.itemContainers.template.events.on("hit", (event) => {
+        const visible = event.target.dataItem.dataContext['visible'];
+
+        this.onToggleLegend.emit({
+          name: event.target.dataItem['name'],
+          visible: !visible
+        });
+      });
+
       this.chart = chart;
       this.chart.data = this.data;
     });
@@ -95,5 +126,7 @@ export class PieComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         this.chart.dispose();
       }
     });
+
+    this.destroy$.next();
   }
 }

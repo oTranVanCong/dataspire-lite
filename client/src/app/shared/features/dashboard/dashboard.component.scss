@@ -1,20 +1,39 @@
-.grid-container {
-}
+:host {
+  .dashboard-card {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    right: 15px;
+    bottom: 15px;
+  }
+  
+  .more-button {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+  }
+  
+  .dashboard-card-content {
+    text-align: center;
+  }
+  
+  .guest-list {
+    margin-top: 20px;
+    border-top: 1px solid #808080;
+    .guest-filter {
+      mat-form-field {
+        margin-right: 20px;
+      }
 
-.dashboard-card {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  right: 15px;
-  bottom: 15px;
-}
-
-.more-button {
-  position: absolute;
-  top: 5px;
-  right: 10px;
-}
-
-.dashboard-card-content {
-  text-align: center;
+      ::ng-deep mat-checkbox {
+        margin-right: 20px;
+        label {
+          color: #f8f8fd;
+        }
+      }
+    }
+    table {
+      width: 100%;
+    }
+  }
 }

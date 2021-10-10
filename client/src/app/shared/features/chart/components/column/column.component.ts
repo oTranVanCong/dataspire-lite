@@ -3,12 +3,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  EventEmitter,
   Inject,
   Input,
   NgZone,
   OnChanges,
   OnDestroy,
   OnInit,
+  Output,
   PLATFORM_ID,
   SimpleChanges,
   ViewChild
@@ -17,6 +19,9 @@ import {isPlatformBrowser} from '@angular/common';
 
 import * as am4core from '@amcharts/amcharts4/core';
 import * as am4charts from '@amcharts/amcharts4/charts';
+import { CommunicatorService } from 'src/app/services/communicator.service';
+import { filter, takeUntil } from 'rxjs/operators';
+import { Subject } from 'rxjs';
 
 @Component({
   selector: 'app-column',
@@ -35,10 +40,13 @@ export class ColumnComponent implements OnInit, AfterViewInit, OnChanges, OnDest
     first: number;
     second: number;
   }>;
+  @Output() onToggleLegend: EventEmitter<{ name: string, visible: boolean }> = new EventEmitter();
+
+  destroy$: Subject<void> = new Subject();
 
   private chart: am4charts.XYChart;
 
-  constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone) {
+  constructor(@Inject(PLATFORM_ID) private platformId, private zone: NgZone, private communicatorService: CommunicatorService) {
   }
 
   // Run the function only in the browser
@@ -51,6 +59,31 @@ export class ColumnComponent implements OnInit, AfterViewInit, OnChanges, OnDest
   }
 
   ngOnInit(): void {
+    this.browserOnly(() => {
+      this.communicatorService.toggleLegend$
+      .pipe(
+        takeUntil(this.destroy$),
+        filter(item => item !== null)
+      )
+      .subscribe((value) => {
+        if (this.chart) {
+          const mapFields: string[] = ['1st-Time Guest', 'Returning Guest'];
+          const serie = this.chart.series.getIndex(mapFields.indexOf(value.name));
+
+          if (!serie) {
+            return;
+          }
+
+          this.chart.legend.itemContainers.template.togglable = false;
+  
+          if (value.visible) {
+            serie.show();
+          } else {
+            serie.hide();
+          }
+        }
+      });
+    });
   }
 
 
@@ -73,6 +106,15 @@ export class ColumnComponent implements OnInit, AfterViewInit, OnChanges, OnDest
       chart.legend.position = 'right';
       chart.legend.marginLeft = 20;
       chart.legend.labels.template.maxWidth = 95;
+
+      chart.legend.itemContainers.template.events.on("hit", (event) => {
+        const visible = event.target.dataItem.dataContext['visible'];
+
+        this.onToggleLegend.emit({
+          name: event.target.dataItem['name'],
+          visible: !visible
+        });
+      });
 
       const xAxis = chart.xAxes.push(new am4charts.CategoryAxis());
       xAxis.dataFields.category = 'category';
@@ -162,5 +204,7 @@ export class ColumnComponent implements OnInit, AfterViewInit, OnChanges, OnDest
         this.chart.dispose();
       }
     });
+
+    this.destroy$.next();
   }
 }
